@@ -1,8 +1,9 @@
+import argparse
 import asyncio
 import signal
 import sys
 from functools import partial
-from typing import Callable
+from typing import Callable, Optional
 
 from app.http_server import http_server
 from app.logging_config import get_logger, setup_logging
@@ -33,11 +34,22 @@ def setup_signal_handlers(shutdown_event: asyncio.Event) -> None:
             loop.add_signal_handler(sig, make_signal_handler(sig, shutdown_event))
 
 
+def parse_args() -> Optional[str]:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--directory", type=str, help="Target directory")
+    args = parser.parse_args()
+    directory = args.directory
+    return directory
+
+
 async def main() -> None:
+    directory = parse_args()
     started_event = asyncio.Event()
     shutdown_event = asyncio.Event()
     setup_signal_handlers(shutdown_event)
-    await http_server(started_event=started_event, shutdown_event=shutdown_event)
+    await http_server(
+        directory=directory, started_event=started_event, shutdown_event=shutdown_event
+    )
 
 
 if __name__ == "__main__":

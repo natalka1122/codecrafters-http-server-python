@@ -1,30 +1,40 @@
-END_LINE = b"\r\n"
-ECHO_PATH = b"/echo/"
-USER_AGENT = b"User-Agent".lower()
+from pathlib import Path
+from typing import Optional
+
+from app.packet import HTTPRequest, HTTPResponse
+
+ECHO_PATH = "/echo/"
+FILES_PATH = "/files/"
+USER_AGENT = "User-Agent"
+CONTENT_TYPE = "Content-Type"
+CONTENT_LENGTH = "Content-Length"
+OK = "OK"
+NOT_FOUND = "Not Found"
+NOT_FOUND_RESPONSE = HTTPResponse(404, NOT_FOUND, headers={}, body="")
 
 
-def processor(request: bytes) -> bytes:
-    lines = request.split(END_LINE)
-    try:
-        request_target = lines[0].split(b" ")[1]
-    except IndexError:
-        return b"TODO"
-    headers = {}
-    for line in lines[1:-1]:
-        try:
-            key, value = line.split(b": ")
-        except ValueError:
-            continue
-        headers[key.lower()] = value
-    if request_target == b"/":
-        return b"HTTP/1.1 200 OK\r\n\r\n"
-    elif request_target.startswith(ECHO_PATH):
-        echo_text = request_target[len(ECHO_PATH) :]
-        result = f"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {len(echo_text)}\r\n\r\n"
-        return result.encode() + echo_text
-    elif request_target == b"/user-agent":
-        user_agent: str = headers.get(USER_AGENT, b"").decode("utf-8")
-        result = f"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {len(user_agent)}\r\n\r\n{user_agent}"
-        return result.encode()
-    else:
-        return b"HTTP/1.1 404 Not Found\r\n\r\n"
+def processor(request: HTTPRequest, directory: Optional[str]) -> HTTPResponse:
+    match request.request_target:
+        case "/":
+            return HTTPResponse(200, OK, {}, body="")
+        case "/user-agent":
+            user_agent: str = request.headers.get(USER_AGENT, "")
+            headers = {CONTENT_TYPE: "text/plain", CONTENT_LENGTH: str(len(user_agent))}
+            return HTTPResponse(200, OK, headers=headers, body=user_agent)
+        case s if s.startswith(ECHO_PATH):
+            echo_text = request.request_target[len(ECHO_PATH) :]
+            headers = {CONTENT_TYPE: "text/plain", CONTENT_LENGTH: str(len(echo_text))}
+            return HTTPResponse(200, OK, headers=headers, body=echo_text)
+        case s if s.startswith(FILES_PATH):
+            if directory is None:
+                return NOT_FOUND_RESPONSE
+            file_path = request.request_target[len(FILES_PATH) :]
+            try:
+                with open(Path(directory) / file_path, "r") as f:
+                    content = f.read()
+            except OSError:
+                return NOT_FOUND_RESPONSE
+            headers = {CONTENT_TYPE: "application/octet-stream", CONTENT_LENGTH: str(len(content))}
+            return HTTPResponse(200, OK, headers=headers, body=content)
+        case _:
+            return NOT_FOUND_RESPONSE

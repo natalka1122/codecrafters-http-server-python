@@ -1,4 +1,5 @@
 import asyncio
+from typing import Optional
 
 from app.connection import Connection
 from app.logging_config import get_logger
@@ -7,10 +8,9 @@ logger = get_logger(__name__)
 
 
 class ServerState:  # noqa: WPS230
-    def __init__(
-        self,
-    ) -> None:
+    def __init__(self, directory: Optional[str]) -> None:
         self.connections: dict[str, Connection] = dict()
+        self.directory = directory
 
     def add_new_connection(
         self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter

@@ -1,10 +1,12 @@
 import asyncio
 import traceback
+from typing import Optional
 
 from app.connection import Connection
 from app.const import DEFAULT_PORT, HOST
 from app.exceptions import ReaderClosedError, WriterClosedError
 from app.logging_config import get_logger
+from app.packet import HTTPRequest
 from app.processor import processor
 from app.server_state import ServerState
 
@@ -12,10 +14,11 @@ logger = get_logger(__name__)
 
 
 async def http_server(  # noqa: WPS213
+    directory: Optional[str],
     shutdown_event: asyncio.Event,
     started_event: asyncio.Event,
 ) -> None:
-    server_state = ServerState()
+    server_state = ServerState(directory=directory)
     try:
         server = await asyncio.start_server(
             lambda reader, writer: handle_client(
@@ -57,12 +60,11 @@ async def handle_client(  # noqa: WPS213
     logger.debug(f"{connection.peername}: New connection")
 
     try:  # noqa: WPS229
-        data_parsed = await connection.read()
+        data_parsed = HTTPRequest.from_bytes(await connection.read())
         logger.debug(f"data_parsed = {data_parsed!r}")
-        if len(data_parsed) >= 0:
-            response = processor(data_parsed)
-            logger.debug(f"response = {response!r}")
-            await connection.write(response)
+        response = processor(data_parsed, directory=server_state.directory)
+        logger.debug(f"response = {response}")
+        await connection.write(response.to_bytes)
     except (ReaderClosedError, WriterClosedError):
         logger.debug(f"{connection.peername}: Client disconnected")
     except asyncio.CancelledError:
