@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Optional
 
-from app.const import END_LINE, OK
+from app.const import END_LINE
 
 
 @dataclass
@@ -28,15 +28,14 @@ class HTTPRequest:
 @dataclass
 class HTTPResponse:
     status_code: int
-    reason_phrase: str = OK
-    headers: Optional[dict[str, str]] = None
+    reason_phrase: str
+    headers: dict[str, str]
     body: str = ""
 
     @property
     def to_bytes(self) -> bytes:
         result: list[str] = [f"HTTP/1.1 {self.status_code} {self.reason_phrase}{END_LINE}"]
-        if self.headers is not None:
-            for key, value in self.headers.items():
-                result.append(f"{key}: {value}{END_LINE}")
+        for key, value in self.headers.items():
+            result.append(f"{key}: {value}{END_LINE}")
         result.append(f"{END_LINE}{self.body}")
         return "".join(result).encode()
