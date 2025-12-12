@@ -1,3 +1,14 @@
 HOST = "0.0.0.0"
 LOCALHOST = "127.0.0.1"
 DEFAULT_PORT = 4221
+
+END_LINE = "\r\n"
+OK = "OK"
+ECHO_PATH = "/echo/"
+FILES_PATH = "/files/"
+USER_AGENT = "User-Agent"
+CONTENT_TYPE = "Content-Type"
+CONTENT_LENGTH = "Content-Length"
+GET = "GET"
+POST = "POST"
+NOT_FOUND = "Not Found"
