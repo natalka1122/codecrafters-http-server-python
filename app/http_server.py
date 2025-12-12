@@ -56,7 +56,7 @@ async def handle_client(  # noqa: WPS213
     connection = server_state.add_new_connection(reader=reader, writer=writer)
     logger.debug(f"{connection.peername}: New connection")
 
-    try:
+    try:  # noqa: WPS229
         data_parsed = await connection.read()
         logger.debug(f"data_parsed = {data_parsed!r}")
         if len(data_parsed) >= 0:
