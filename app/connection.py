@@ -31,7 +31,7 @@ class Connection:  # noqa: WPS214, WPS230
     async def read(self) -> bytes:
         logger.debug(f"{self}: Read")
         try:
-            return await self._reader.read()
+            return await self._reader.read(1024)
         except CancelledError:
             logger.info("Connection.read CancelledError")
             raise

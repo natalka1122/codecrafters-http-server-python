@@ -57,9 +57,9 @@ async def handle_client(  # noqa: WPS213
     logger.debug(f"{connection.peername}: New connection")
 
     try:
-        while not connection.closing.is_set():
-            data_parsed = await connection.read()
-            logger.debug(f"data_parsed = {data_parsed!r}")
+        data_parsed = await connection.read()
+        logger.debug(f"data_parsed = {data_parsed!r}")
+        if len(data_parsed) >= 0:
             response = processor(data_parsed)
             logger.debug(f"response = {response!r}")
             await connection.write(response)
@@ -72,6 +72,7 @@ async def handle_client(  # noqa: WPS213
         logger.error(f"{connection.peername}: Error in client handler: {type(e)} {e}")
         logger.error(traceback.format_exc())
 
+    connection.closing.set()
     # Clean up the connection (only reached if not cancelled)
     logger.info(f"{connection.peername}: Closing connection")
     await server_state.purge_connection(connection)
