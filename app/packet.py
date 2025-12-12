@@ -1,7 +1,6 @@
 from dataclasses import dataclass
-from typing import Optional
 
-from app.const import END_LINE
+from app.const import END_LINE, GZIP
 
 
 @dataclass
@@ -31,6 +30,11 @@ class HTTPResponse:
     reason_phrase: str
     headers: dict[str, str]
     body: str = ""
+    _should_gzip: bool = False
+
+    def gzip(self) -> None:
+        self._should_gzip = True
+        self.headers["Content-Encoding"] = GZIP
 
     @property
     def to_bytes(self) -> bytes:

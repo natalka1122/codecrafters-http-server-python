@@ -7,6 +7,7 @@ from app.const import (
     ECHO_PATH,
     FILES_PATH,
     GET,
+    GZIP,
     NOT_FOUND,
     OK,
     POST,
@@ -19,9 +20,12 @@ NOT_FOUND_RESPONSE = HTTPResponse(404, NOT_FOUND, headers=dict())
 
 def processor(request: HTTPRequest, directory: Optional[str]) -> tuple[bool, HTTPResponse]:
     should_close = request.headers.get("Connection", "") == "close"
+    should_gzip = GZIP in request.headers.get("Accept-Encoding", "").split(", ")
     response = _processor(request=request, directory=directory)
     if should_close:
         response.headers["Connection"] = "close"
+    if should_gzip:
+        response.gzip()
     return should_close, response
 
 
