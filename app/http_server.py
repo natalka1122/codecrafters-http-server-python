@@ -59,17 +59,21 @@ async def handle_client(  # noqa: WPS213
     connection = server_state.add_new_connection(reader=reader, writer=writer)
     logger.debug(f"{connection.peername}: New connection")
 
+    should_close = False
     try:  # noqa: WPS229
-        data_parsed = HTTPRequest.from_bytes(await connection.read())
-        logger.debug(f"data_parsed = {data_parsed!r}")
-        response = processor(data_parsed, directory=server_state.directory)
-        logger.debug(f"response = {response}")
-        await connection.write(response.to_bytes)
+        while not should_close:
+            data_parsed = HTTPRequest.from_bytes(await connection.read())
+            logger.debug(f"data_parsed = {data_parsed!r}")
+            should_close, response = processor(data_parsed, directory=server_state.directory)
+            logger.debug(f"response = {response}")
+            await connection.write(response.to_bytes)
     except (ReaderClosedError, WriterClosedError):
         logger.debug(f"{connection.peername}: Client disconnected")
     except asyncio.CancelledError:
         logger.info(f"{connection.peername}: Connection handler cancelled.")
         raise  # Don't clean up - server will handle it
+    except ValueError:
+        pass
     except Exception as e:
         logger.error(f"{connection.peername}: Error in client handler: {type(e)} {e}")
         logger.error(traceback.format_exc())
