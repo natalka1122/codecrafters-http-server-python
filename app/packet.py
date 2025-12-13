@@ -16,12 +16,15 @@ class HTTPRequest:
         lines = data.split(END_LINE)
         method, request_target, _ = lines[0].split(b" ")
         headers: dict[bytes, bytes] = {}
-        for line in lines[1:]:
+        index = 1
+        while index < len(lines):
+            line = lines[index]
             if len(line) == 0:
                 break
             key, value = line.split(b": ")
             headers[key] = value
-        body = lines[-1]
+            index += 1
+        body = END_LINE.join(lines[index + 1 :])
         return HTTPRequest(method=method, request_target=request_target, headers=headers, body=body)
 
 
